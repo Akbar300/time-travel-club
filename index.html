@@ -178,8 +178,8 @@ main{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch}
 .qcard h2{margin:0;font-size:25px;line-height:1.2}
 .qcard .qimg{max-height:230px;border-radius:14px;overflow:hidden}
 .qcard .qimg img{width:100%;height:230px;object-fit:cover;display:block}
-.qopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.qopts .btn{justify-content:flex-start;text-align:left;font-size:19px;min-height:64px}
+.qopts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.qopts .btn{justify-content:flex-start;text-align:left;font-size:22px;min-height:68px;padding:12px 16px;overflow-wrap:normal;word-break:normal;hyphens:none;line-height:1.25;white-space:normal}
 .qopts .btn .em{font-size:28px}
 .explain{background:#F0FDF4;border-radius:12px;padding:8px 12px;font-size:17px;border-left:6px solid #22C55E}
 /* flashcards */
@@ -291,9 +291,9 @@ body.set-puff main{background:transparent}
 @keyframes flow{to{stroke-dashoffset:-20}}
 .flowing{stroke-dasharray:6 4;animation:flow .6s linear infinite}
 
-/* quiz short answers in a single row */
-.qopts.row{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
-.qopts.row .btn{justify-content:center;text-align:center}
+/* quiz short answers (one word or number) may share a row and wrap only if they cannot fit */
+.qopts.row{display:flex;flex-wrap:wrap;gap:12px}
+.qopts.row .btn{flex:1 1 0;min-width:64px;justify-content:center;text-align:center}
 /* explore the map */
 .explore{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(250px,.9fr);gap:12px;align-items:stretch}
 .explore .mapbox{min-height:0}
@@ -342,8 +342,8 @@ body.set-puff main{background:transparent}
  .bin h4{min-width:0;overflow-wrap:anywhere}
  .venn .bin{min-height:200px}
  .venn .bin h4{font-size:14px}
- .qcard h2{font-size:20px}.qopts{grid-template-columns:1fr}.qopts .btn{font-size:17px;min-height:54px}
- .qopts.row{grid-template-columns:repeat(auto-fit,minmax(0,1fr))!important}.qopts.row .btn{min-height:48px;font-size:16px;padding:6px 8px}
+ .qcard h2{font-size:22px}.qopts{grid-template-columns:1fr}.qopts .btn{font-size:20px;min-height:60px;padding:12px 14px}
+ .qopts.row{display:flex;flex-wrap:wrap;gap:12px!important}.qopts.row .btn{flex:1 1 0;min-width:64px;min-height:60px;font-size:20px;padding:10px 12px}
  .qcard .qimg img{height:160px}
  .oitem{font-size:15.5px;padding:6px 8px;min-height:52px}.oitem .em{font-size:24px}
  .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -814,10 +814,12 @@ function orderEngine(run,A,after){const correct=A.items.map((x,i)=>({...x,i}));l
   if(!firstBad){now.forEach(e=>{e.querySelector('.yr').textContent=e.it.yr||''});right(A.ok||'Perfect order!');if(after)after();else setTimeout(()=>finish(),900)}
   else wrong(firstBad.it.hint||A.hint||'Some cards are in the wrong spot. The red ones need to move.')}
 }
+/* compact answers (one short word or number) may sit in a single row */
+const compactOpt=s=>{const t=String(s==null?'':s).replace(/<[^>]+>/g,' ').replace(/&nbsp;?/gi,' ').replace(/&[a-z]+;/gi,' ').replace(/\s+/g,' ').trim();if(!t)return false;if(/^[€£$]?[\d.,:\-/%]+$/.test(t))return true;const raw=t.replace(/\s+/g,'');if(/^\d+[×x÷+\-]\d+$/.test(raw)&&raw.length<=8)return true;return !/\s/.test(t)&&t.length<=8};
 /* ---------- QUIZ / CHOICES ---------- */
 ENGINES.quiz=(run,A)=>{const qs=A.shuffle===false?A.qs:shuffle(A.qs);let k=0;
  const draw=()=>{run.stage.innerHTML='';if(k>=qs.length){finish();return}const q=qs[k];let missed=false;const order=shuffle(q.opts.map((o,i)=>i));
-  const exp=h('div');const short=q.row||order.every(i=>String(q.opts[i]).replace(/<[^>]+>/g,'').length<=22);const opts=h('div',{class:'qopts'+(short?' row':'')});
+  const exp=h('div');const short=order.every(i=>compactOpt(q.opts[i]));const opts=h('div',{class:'qopts'+(short?' row':'')});
   order.forEach(i=>{const o=q.opts[i];const b=h('button',{class:'btn','data-ok':i===q.a?1:0},o);b.onclick=()=>{if(b.classList.contains('dim')||opts.dataset.done)return;if(i===q.a){b.classList.add('right');opts.dataset.done=1;$$('.btn',opts).forEach(x=>{if(x!==b)x.classList.add('dim')});if(!missed)right(q.ok||'');else{sfx.good();say('Yes, now you\'ve got it! '+(q.ok||''),'good')}
      exp.append(h('div',{class:'explain',html:'💡 '+(q.why||'')}),h('div',{class:'row',style:'justify-content:flex-end;margin-top:8px'},h('button',{class:'btn primary',id:'qNext',onclick:()=>{sfx.tap();k++;draw()}},k<qs.length-1?'Next question ›':'Finish ✓')))}
     else{b.classList.add('wrong','dim');if(!missed){missed=true;wrong(q.hint||'Read the question again.')}else{run.mistakes++;sfx.bad();say('Try one more. '+(q.hint||''),'hint')}}};opts.append(b)});
